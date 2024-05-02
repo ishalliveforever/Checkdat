@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sign Message with Panda Wallet</title>
+    <!-- Ensure you include the Panda Wallet SDK -->
+    <script src="https://cdn.pandawallet.io/sdk/latest/pandawallet-sdk.min.js"></script>
+</head>
+<body>
+    <h1>Sign a Message with Your Panda Wallet</h1>
+    <button id="signMessage">Sign Message</button>
+
+    <script>
+        document.getElementById('signMessage').addEventListener('click', async () => {
+            if (window.ethereum && window.ethereum.isPandaWallet) {
+                // Request user to connect and authorize the website to access Panda Wallet
+                try {
+                    await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+                    const message = "Please sign this message to verify your identity for Discord.";
+                    const from = ethereum.selectedAddress; // Automatically picks the user's current selected address
+
+                    // Using the eth_sign method to request a signature
+                    const signature = await window.ethereum.request({
+                        method: 'personal_sign',
+                        params: [message, from]
+                    });
+
+                    console.log("Signature:", signature);
+                    alert('Message signed successfully. Please return to Discord and confirm.');
+
+                    // Optionally, send the signature back to your server for further verification
+                    // fetch('https://yourserver.com/verify', {
+                    //     method: 'POST',
+                    //     headers: {'Content-Type': 'application/json'},
+                    //     body: JSON.stringify({ signature, message, from })
+                    // });
+
+                } catch (error) {
+                    console.error('Error signing the message with Panda Wallet:', error);
+                    alert('Failed to sign message. Please ensure your wallet is unlocked and try again.');
+                }
+            } else {
+                alert('Panda Wallet extension is not detected or not enabled. Please ensure it is installed and enabled.');
+            }
+        });
+    </script>
+</body>
+</html>
