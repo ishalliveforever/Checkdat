@@ -1,11 +1,12 @@
 const { Client, GatewayIntentBits } = require('discord.js');
-const axios = require('axios');
 require('dotenv').config();
 
 // Check that the environment variable for the Discord token is set
 if (!process.env.DISCORD_BOT_TOKEN) {
+    console.log("Checking for DISCORD_BOT_TOKEN...");
     throw new Error("DISCORD_BOT_TOKEN environment variable is not set");
 }
+console.log("DISCORD_BOT_TOKEN found.");
 
 // Initialize the Discord Client with appropriate intents
 const client = new Client({
@@ -13,10 +14,10 @@ const client = new Client({
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.DirectMessages  // Necessary to send DMs
+        GatewayIntentBits.GuildMembers
     ]
 });
+console.log("Discord Client initialized with intents.");
 
 // Event listener for when the bot is ready
 client.on('ready', () => {
@@ -25,20 +26,29 @@ client.on('ready', () => {
 
 // Event listener for new messages
 client.on('messageCreate', async message => {
+    console.log(`Received message: ${message.content} from ${message.author.tag}`);
+    
     // Check if the message is from a guild, is not from a bot, and matches the command
-    if (!message.guild || message.author.bot) return;
+    if (!message.guild) {
+        console.log("Message not from a guild, ignoring.");
+        return;
+    }
+    if (message.author.bot) {
+        console.log("Message from a bot, ignoring.");
+        return;
+    }
 
     if (message.content.toLowerCase() === '!verify') {
-        const verificationUrl = 'https://fantastic-space-couscous-w4q9gr5prrwfjwj-8080.app.github.dev/';  // URL to your Panda Wallet signing page
+        console.log("Command '!verify' recognized.");
+        
+        // Provide the OAuth2 authentication URL for Discord
+        const authUrl = `${process.env.SERVER_URL}/auth`;
+        console.log(`Authentication URL: ${authUrl}`);
 
-        // Try to send a direct message to the user with the verification link
-        try {
-            await message.author.send(`Please click the following link to sign a message with your Panda Wallet to verify your identity: ${verificationUrl}`);
-            console.log(`Verification link sent to user ${message.author.tag}.`);
-        } catch (error) {
-            console.error(`Could not send DM to user ${message.author.tag}:`, error);
-            message.reply("I couldn't send you a DM. Please check your privacy settings!");
-        }
+        // Send a reply with the verification link
+        message.reply(`Please click the following link to authenticate with Discord: ${authUrl}`)
+            .then(() => console.log(`Verification link sent to user ${message.author.tag}.`))
+            .catch(error => console.error("Failed to send verification link:", error));
     }
 });
 
@@ -50,3 +60,18 @@ client.login(process.env.DISCORD_BOT_TOKEN)
     .catch(error => {
         console.error("Failed to log into Discord:", error);
     });
+
+// Graceful shutdown on Ctrl+C
+process.on("SIGINT", () => {
+    console.log("Received SIGINT, shutting down...");
+    client.destroy();
+    process.exit();
+});
+
+process.on("SIGTERM", () => {
+    console.log("Received SIGTERM, shutting down...");
+    client.destroy();
+    process.exit();
+});
+
+console.log("Event handlers and login setup complete.");
