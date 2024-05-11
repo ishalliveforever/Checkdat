@@ -1,92 +1,66 @@
+from flask import Flask, request, redirect, session, jsonify, render_template
+import requests
 import os
-import discord
-from flask import Flask, jsonify, request
 from dotenv import load_dotenv
-import asyncio
 
 load_dotenv()
-app = Flask(__name__)
 
-print("Loaded environment variables...")
+app = Flask(__name__, static_folder='static', template_folder='templates')
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'super_secret_key')
+
 DISCORD_CLIENT_ID = os.getenv('DISCORD_CLIENT_ID')
 DISCORD_CLIENT_SECRET = os.getenv('DISCORD_CLIENT_SECRET')
 DISCORD_REDIRECT_URI = os.getenv('DISCORD_REDIRECT_URI')
 
-print(f"Client ID: {DISCORD_CLIENT_ID}")
-print(f"Client Secret: {DISCORD_CLIENT_SECRET}")
-print(f"Redirect URI: {DISCORD_REDIRECT_URI}")
+@app.route('/')
+def home():
+    return 'Home Page - Server is Running'
 
-intents = discord.Intents.default()
-intents.members = True
-client = discord.Client(intents=intents)
-print("Discord client initialized with intents.")
+@app.route('/auth')
+def auth():
+    discord_oauth_url = f"https://discord.com/api/oauth2/authorize?client_id={DISCORD_CLIENT_ID}" \
+                        f"&redirect_uri={DISCORD_REDIRECT_URI}&response_type=code&scope=identify"
+    return redirect(discord_oauth_url)
 
-@app.route("/get_discord_username/<account>", methods=["GET"])
-def get_discord_username(account):
-    print(f"Received request to get Discord username for account ID: {account}")
-    user_id = int(account)
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    print("Starting new asyncio event loop...")
-    username = loop.run_until_complete(fetch_user_name(user_id))
-    loop.close()
-    print("Closed asyncio loop.")
-    return jsonify({"username": username})
-
-async def fetch_user_name(user_id):
-    try:
-        print(f"Fetching user data for user ID: {user_id}")
-        user = await client.fetch_user(user_id)
-        print(f"Found user: {user.name}#{user.discriminator}")
-        return f"{user.name}#{user.discriminator}"
-    except discord.NotFound:
-        print(f"User with ID {user_id} not found.")
-        return f"Unknown User ({user_id})"
-    except discord.HTTPException as e:
-        print(f"Failed to fetch user {user_id} due to HTTPException: {e}")
-        return f"Unknown User ({user_id})"
-    except Exception as e:
-        print(f"An unexpected error occurred while fetching user {user_id}: {e}")
-        return f"Unknown User ({user_id})"
-
-@app.route("/discord/oauth2/callback", methods=["GET"])
+@app.route('/oauth2/callback')
 def oauth2_callback():
     code = request.args.get('code')
-    state = request.args.get('state')
-    print(f"Received OAuth2 callback with code: {code} and state: {state}")
+    if not code:
+        return "Authorization request did not include a code.", 400
+    token_data = exchange_code_for_token(code)
+    access_token = token_data.get('access_token')
+    if not access_token:
+        return jsonify({'error': 'Failed to obtain access token'}), 500
+    user_data = fetch_discord_user_data(access_token)
+    session['username'] = user_data.get('username')
+    session['access_token'] = access_token
+    return redirect('/verify_wallet')
 
-    # Verify the state parameter for security (implement if using state)
-    # Exchange code for an access token
-    token_url = "https://discord.com/api/oauth2/token"
+@app.route('/verify_wallet')
+def verify_wallet():
+    username = session.get('username', 'unknown user')
+    return render_template('index.html', username=username)
+
+def exchange_code_for_token(code):
     data = {
         'client_id': DISCORD_CLIENT_ID,
         'client_secret': DISCORD_CLIENT_SECRET,
         'grant_type': 'authorization_code',
         'code': code,
-        'redirect_uri': DISCORD_REDIRECT_URI,
+        'redirect_uri': DISCORD_REDIRECT_URI
     }
-    headers = {
-        'Content-Type': 'application/x-www-form-urlencoded'
-    }
+    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+    token_response = requests.post('https://discord.com/api/oauth2/token', data=data, headers=headers)
+    if token_response.status_code == 200:
+        return token_response.json()
+    return {}
 
-    print("Requesting access token from Discord...")
-    token_response = request.post(token_url, data=data, headers=headers)
-    token_response_data = token_response.json()
-    access_token = token_response_data['access_token']
-    print(f"Access token received: {access_token}")
+def fetch_discord_user_data(access_token):
+    headers = {'Authorization': f'Bearer {access_token}'}
+    response = requests.get('https://discord.com/api/users/@me', headers=headers)
+    if response.status_code == 200:
+        return response.json()
+    return {}
 
-    # Fetch user information
-    user_info_url = "https://discord.com/api/users/@me"
-    headers = {
-        'Authorization': f'Bearer {access_token}'
-    }
-    print("Fetching user information...")
-    user_info_response = request.get(user_info_url, headers=headers)
-    user_info = user_info_response.json()
-    print(f"User information received: {user_info}")
-
-    return jsonify(user_info)
-
-if __name__ == "__main__":
-    print("Starting Flask server...")
-    app.run(port=5000)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)

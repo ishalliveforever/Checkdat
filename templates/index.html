@@ -5,11 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login with Your Panda Wallet</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
         body {
             font-family: 'Roboto', sans-serif;
-            background-color: #1e1e1e;
+            background-color: #2C2F33;
             color: #FFF;
             display: flex;
             flex-direction: column;
@@ -18,45 +17,33 @@
             height: 100vh;
             margin: 0;
         }
-        .container {
-            text-align: center;
-        }
         h1 {
-            font-size: 40px;
-            background: linear-gradient(to right, #dfd003, #f2ff00);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 20px;
-            text-shadow: 2px 2px 4px rgba(182, 180, 25, 0.5);
+            color: #7289DA;
         }
-        button {
-            background-color: hsl(51, 66%, 47%);
+        #loginWithWallet {
+            background-color: #7289DA;
             color: white;
             border: none;
-            padding: 15px 32px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
+            padding: 10px 20px;
             font-size: 16px;
-            margin-top: 20px;
-            border-radius: 5px;
             cursor: pointer;
+            border-radius: 5px;
             transition: background-color 0.3s;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
         }
-        button:hover {
-            background-color: #000000;
+        #loginWithWallet:hover {
+            background-color: #5A6EBA;
+        }
+        .container {
+            text-align: center;
         }
         .footer {
             margin-top: 20px;
             font-size: 12px;
             color: #BBB;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
         .footer a {
-            color: #fff;
+            color: #7289DA;
             text-decoration: none;
-            margin: 0 10px;
         }
         .footer a:hover {
             text-decoration: underline;
@@ -66,32 +53,25 @@
 <body>
     <div class="container">
         <h1>Welcome to 1Sat Society</h1>
-        <button id="loginWithWallet">Login with Discord</button>
-        <button id="verifyCollections" style="display:none;">Verify with Panda Wallet</button>
+        <button id="loginWithWallet">Verify with Wallet</button>
     </div>
-
     <div class="footer">
-        <a href="https://twitter.com/YourTwitterHandle" target="_blank"><i class="fab fa-twitter"></i></a>
-        <a href="mailto:youremail@example.com"><i class="fas fa-envelope"></i></a>
-        <a href="https://github.com/YourGitHubHandle" target="_blank"><i class="fab fa-github"></i></a>
+        Powered by <a href="https://twitter.com/OGKek9" target="_blank">OGkek9</a>
     </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
     <script>
-        console.log("Loading collection IDs...");
+        const username = "{{ username }}";  // Receive username from Flask
+        console.log("Username received:", username);
+</script>
+        <script>
         const COLLECTION_IDS = {
             "Grand Tardinians": "f099182e168c0a30a9f97556d156c8b6284cfc3f76eca8352807b1ceff29da04_0",
             "Order of the Delta": "217c6fa01e2d59e04138e117198635f750685aca771d1d3e5c808e4bf694df78_0",
             "0Face": "cc274a2cc28d88f24a7442443b5542fefe95e486f81f4261e0649401eec30c5d_0",
+            "Pixel Foxes": "1611d956f397caa80b56bc148b4bce87b54f39b234aeca4668b4d5a7785eb9fa_0"
         };
 
-        console.log("Setting up event listeners...");
-        document.getElementById('loginWithWallet').addEventListener('click', () => {
-            console.log("Redirecting to /auth...");
-            window.location.href = "/auth";
-        });
+        const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1236859458932707409/db5e-vvU4AXfPNuV7610INisaAZDbiXFh5bwsQqKneDNEWPE27B0uOesT3FkFFOeNa1m";
 
-        console.log("Initializing wallet provider...");
         const initProvider = () => {
             console.log("Initializing Panda Wallet provider...");
             if (window.panda?.isReady) {
@@ -105,8 +85,7 @@
             return null;
         };
 
-        console.log("Setting up verification collection button event listener...");
-        document.getElementById('verifyCollections').addEventListener('click', async () => {
+        const loginWithPandaWallet = async () => {
             console.log("Attempting to log in with Panda Wallet...");
             try {
                 const wallet = initProvider();
@@ -126,9 +105,8 @@
                 console.error('Error when interacting with Panda Wallet:', err);
                 alert('Failed to login with Panda Wallet. Please ensure it is unlocked and try again.');
             }
-        });
+        };
 
-        console.log("Defining checkUserOrdinals function...");
         const checkUserOrdinals = async (ordAddress, account) => {
             console.log("Checking user's ordinals for address:", ordAddress);
             try {
@@ -150,15 +128,45 @@
                 }
                 if (userCollections.length > 0) {
                     alert(`User has access to the following collections: ${userCollections.join(', ')}.`);
-                    // Add your sendToDiscord function or any other handling here
+                    await sendToDiscord(account, userCollections);
                 } else {
                     alert('User does not have any special collections.');
                 }
-            } catch (error) {
-                console.error('Error checking user ordinals:', error);
-                alert('Failed to check collections. Please try again later.');
+            } catch (err) {
+                console.error('Error when checking user ordinals:', err);
+                alert(`Failed to verify ordinals. ${err.message}`);
             }
         };
+
+        const sendToDiscord = async (account, collections) => {
+            console.log("Sending user info to Discord:", collections);
+            try {
+                const response = await fetch(DISCORD_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        content: `Assigning roles to user: ${account}`,
+                        embeds: [{
+                            title: "Verification Successful",
+                            description: `You have been assigned roles: ${collections.join(", ")}.`,
+                            color: 65280
+                        }]
+                    }),
+                });
+
+                if (!response.ok) {
+                    console.error("Failed to send to Discord:", response.statusText);
+                    alert("Failed to send to Discord");
+                }
+            } catch (err) {
+                console.error("Error when sending to Discord:", err);
+                alert("Error when sending to Discord. Please try again.");
+            }
+        };
+
+        document.getElementById('loginWithWallet').addEventListener('click', loginWithPandaWallet);
     </script>
 </body>
 </html>
