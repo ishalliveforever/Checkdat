@@ -85,36 +85,42 @@ def oauth2_callback():
     if not access_token:
         return jsonify({'error': 'Failed to obtain access token'}), 500
     user_data = fetch_discord_user_data(access_token)
-    # Save the user or update if exists
-    user = User.query.filter_by(username=user_data.get('username')).first()
+    username = user_data.get('username')
+
+    # Ensure user is fetched or created without duplicating address entries
+    user = User.query.filter_by(username=username).first()
     if user is None:
-        user = User(username=user_data.get('username'))
+        user = User(username=username)  # Do not set addresses here
         db.session.add(user)
-    user.bsv_address = user_data.get('bsv_address', '')  # Assume these are passed correctly
-    user.ord_address = user_data.get('ord_address', '')
+
     db.session.commit()
     session['user_id'] = user.id  # Save user ID in session for later use
     return redirect('/verify_wallet')
+
 
 @app.route('/save_wallet_addresses', methods=['POST'])
 def save_wallet_addresses():
     data = request.json
     username = data['username']
-    bsv_address = data['bsvAddress']
-    ord_address = data['ordAddress']
+    new_bsv_address = data['bsvAddress']
+    new_ord_address = data['ordAddress']
 
     # Find the user by username or create a new one
     user = User.query.filter_by(username=username).first()
     if not user:
-        user = User(username=username)
+        user = User(username=username, bsv_address=new_bsv_address, ord_address=new_ord_address)
         db.session.add(user)
-    
-    # Update addresses
-    user.bsv_address = bsv_address
-    user.ord_address = ord_address
+    else:
+        # Update addresses only if they are not set
+        if user.bsv_address is None:
+            user.bsv_address = new_bsv_address
+        if user.ord_address is None:
+            user.ord_address = new_ord_address
+
     db.session.commit()
     
     return jsonify({"message": "Addresses saved successfully"}), 200
+
 
 @app.route('/verify_wallet')
 def verify_wallet():
@@ -144,4 +150,3 @@ def fetch_discord_user_data(access_token):
 if __name__ == '__main__':
     setup_database()  # Ensure database is setup at startup
     app.run(host='0.0.0.0', port=5000, debug=True)
-
