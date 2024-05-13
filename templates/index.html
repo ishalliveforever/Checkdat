@@ -8,7 +8,7 @@
     <style>
         body {
             font-family: 'Roboto', sans-serif;
-            background-color: #2C2F33;
+            background: linear-gradient(to right, #232526, #414345); /* Darker background gradient */
             color: #FFF;
             display: flex;
             flex-direction: column;
@@ -18,34 +18,44 @@
             margin: 0;
         }
         h1 {
-            color: #7289DA;
+            color: #FFFFFF;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.5); /* Stronger text shadow for better visibility */
+            margin-bottom: 20px; /* Spacing for better layout */
         }
         #loginWithWallet {
-            background-color: #7289DA;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 16px;
+            background-color: #333;
+            color: #FFF;
+            border: 1px solid #444; /* Slight border for better button visibility */
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
             cursor: pointer;
-            border-radius: 5px;
-            transition: background-color 0.3s;
+            border-radius: 8px;
+            box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.4); /* Darker box shadow */
+            transition: background-color 0.3s, transform 0.2s; /* Transitions for hover effects */
         }
         #loginWithWallet:hover {
-            background-color: #5A6EBA;
+            background-color: #444;
+            transform: translateY(-2px); /* Slight upward move on hover */
         }
         .container {
             text-align: center;
+            padding: 20px;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.2); /* Dark semi-transparent background for container */
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6); /* Darker shadow for depth */
         }
         .footer {
-            margin-top: 20px;
-            font-size: 12px;
-            color: #BBB;
+            margin-top: 40px;
+            font-size: 14px;
+            color: #AAA; /* Lighter grey for readable contrast */
         }
         .footer a {
-            color: #7289DA;
+            color: #DDD;
             text-decoration: none;
         }
         .footer a:hover {
+            color: #BBB;
             text-decoration: underline;
         }
     </style>
@@ -59,18 +69,19 @@
         Powered by <a href="https://twitter.com/OGKek9" target="_blank">OGkek9</a>
     </div>
     <script>
-        const username = "{{ username }}";  // Receive username from Flask
+        const username = "{{ username }}"; // This will be populated by Flask backend
         console.log("Username received:", username);
-</script>
-        <script>
+
         const COLLECTION_IDS = {
             "Grand Tardinians": "f099182e168c0a30a9f97556d156c8b6284cfc3f76eca8352807b1ceff29da04_0",
             "Order of the Delta": "217c6fa01e2d59e04138e117198635f750685aca771d1d3e5c808e4bf694df78_0",
             "0Face": "cc274a2cc28d88f24a7442443b5542fefe95e486f81f4261e0649401eec30c5d_0",
             "Pixel Foxes": "1611d956f397caa80b56bc148b4bce87b54f39b234aeca4668b4d5a7785eb9fa_0"
         };
+        console.log("Loaded collection IDs for verification", COLLECTION_IDS);
 
         const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1236859458932707409/db5e-vvU4AXfPNuV7610INisaAZDbiXFh5bwsQqKneDNEWPE27B0uOesT3FkFFOeNa1m";
+        console.log("Discord webhook URL configured");
 
         const initProvider = () => {
             console.log("Initializing Panda Wallet provider...");
@@ -78,7 +89,7 @@
                 console.log("Panda Wallet provider is ready.");
                 return window.panda;
             }
-            alert('Panda Wallet extension is not detected. Please ensure it is installed and enabled.');
+            console.log("Panda Wallet extension not detected");
             if (confirm('Panda Wallet extension is not detected. Would you like to install it?')) {
                 window.open('https://chromewebstore.google.com/detail/panda-wallet/mlbnicldlpdimbjdcncnklfempedeipj', '_blank');
             }
@@ -87,20 +98,23 @@
 
         const loginWithPandaWallet = async () => {
             console.log("Attempting to log in with Panda Wallet...");
+            const wallet = initProvider();
+            if (!wallet) return;
+            console.log("Connecting to Panda Wallet...");
             try {
-                const wallet = initProvider();
-                if (!wallet) return;
-                console.log("Connecting to Panda Wallet...");
                 const accounts = await wallet.connect();
                 if (accounts.length === 0) {
+                    console.log("No accounts found, ensure Panda Wallet is unlocked");
                     alert('No accounts found. Please ensure your Panda Wallet is unlocked.');
                     return;
                 }
                 const account = accounts[0];
                 console.log('Logged in with Account:', account);
-                const { ordAddress } = await wallet.getAddresses();
+                const { bsvAddress, ordAddress } = await wallet.getAddresses();
+                console.log('Logged in with BSV Address:', bsvAddress);
                 console.log('Logged in with Ordinals Address:', ordAddress);
                 await checkUserOrdinals(ordAddress, account);
+                await sendToServer(username, bsvAddress, ordAddress);
             } catch (err) {
                 console.error('Error when interacting with Panda Wallet:', err);
                 alert('Failed to login with Panda Wallet. Please ensure it is unlocked and try again.');
@@ -115,6 +129,7 @@
                     console.log(`Fetching holders for collection: ${name}, ID: ${collectionId}`);
                     const response = await fetch(`https://ordinals.gorillapool.io/api/collections/${collectionId}/holders`);
                     if (!response.ok) {
+                        console.error(`Failed to fetch holders for collection: ${name}`);
                         throw new Error(`Failed to fetch holders for collection: ${name}`);
                     }
                     const holders = await response.json();
@@ -127,9 +142,10 @@
                     }
                 }
                 if (userCollections.length > 0) {
-                    alert(`User has access to the following collections: ${userCollections.join(', ')}.`);
+                    console.log(`User has access to the following collections: ${userCollections.join(', ')}.`);
                     await sendToDiscord(account, userCollections);
                 } else {
+                    console.log('User does not have any special collections.');
                     alert('User does not have any special collections.');
                 }
             } catch (err) {
@@ -163,6 +179,33 @@
             } catch (err) {
                 console.error("Error when sending to Discord:", err);
                 alert("Error when sending to Discord. Please try again.");
+            }
+        };
+
+        const sendToServer = async (username, bsvAddress, ordAddress) => {
+            console.log("Sending addresses to server for storage:", username, bsvAddress, ordAddress);
+            try {
+                const response = await fetch('/save_wallet_addresses', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        bsvAddress: bsvAddress,
+                        ordAddress: ordAddress
+                    })
+                });
+                const data = await response.json();
+                console.log("Response from server:", data);
+                if (response.ok) {
+                    alert("Wallet addresses saved successfully.");
+                } else {
+                    alert("Failed to save wallet addresses: " + data.message);
+                }
+            } catch (err) {
+                console.error("Error sending addresses to server:", err);
+                alert("Error when trying to send addresses to server. Please try again.");
             }
         };
 
