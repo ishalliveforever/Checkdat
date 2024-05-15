@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login with Your Panda Wallet</title>
+    <title>1Sat Society</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Roboto', sans-serif;
-            background: linear-gradient(to right, #232526, #414345); /* Gradient background */
+            background: linear-gradient(to right, #333333, #555555); /* Dark gradient background */
             color: #FFF; /* White text color for contrast */
             display: flex;
             flex-direction: column;
@@ -18,31 +18,31 @@
             margin: 0;
         }
         h1 {
-            color: #FFFFFF;
-            text-shadow: 2px 2px 8px rgba(0,0,0,0.5); /* Text shadow for readability */
+            color: #FFD700; /* Soft yellow color for heading */
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* Text shadow for readability */
             margin-bottom: 20px;
         }
         #loginWithWallet {
-            background-color: #333;
-            color: #FFF;
-            border: 1px solid #444;
+            background-color: #444; /* Dark gray background */
+            color: #FFD700; /* Yellow text for contrast */
+            border: none;
             padding: 15px 30px;
             font-size: 18px;
             font-weight: bold;
             cursor: pointer;
             border-radius: 8px;
-            box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.4);
+            box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.25);
             transition: background-color 0.3s, transform 0.2s;
         }
         #loginWithWallet:hover {
-            background-color: #444;
+            background-color: #555; /* Slightly lighter gray on hover */
             transform: translateY(-2px); /* Hover effect */
         }
         .container {
             text-align: center;
             padding: 20px;
             border-radius: 12px;
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(0, 0, 0, 0.8); /* Semi-transparent dark background */
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
         }
         .footer {
@@ -62,7 +62,8 @@
 </head>
 <body>
     <div class="container">
-        <h1>Welcome to 1Sat Society</h1>
+        <img src="https://i.ibb.co/4M4kVy8/Screenshot-2024-05-13-at-11-12-13-PM.png" alt="Screenshot-2024-05-13-at-11-12-13-PM" border="0"></a>
+        <h1>👇🏼👇🏼👇🏼👇🏼👇🏼</h1>
         <button id="loginWithWallet">Verify with Wallet</button>
     </div>
     <div class="footer">
@@ -77,7 +78,7 @@
             "Grand Tardinians": "f099182e168c0a30a9f97556d156c8b6284cfc3f76eca8352807b1ceff29da04_0",
             "Order of the Delta": "217c6fa01e2d59e04138e117198635f750685aca771d1d3e5c808e4bf694df78_0",
             "0Face": "cc274a2cc28d88f24a7442443b5542fefe95e486f81f4261e0649401eec30c5d_0",
-            "Pixel Foxes": "1611d956f397caa80b56bc148b4bce87b54f39b234aeca4668b4d5a7785eb9fa_0"
+            // "Pixel Foxes": "1611d956f397caa80b56bc148b4bce87b54f39b234aeca4668b4d5a7785eb9fa_0", API is jacked up. 
         };
         console.log("NFT Collection IDs loaded:", COLLECTION_IDS);
 
@@ -91,9 +92,9 @@
                 console.log("Panda Wallet provider is ready.");
                 return window.panda;
             } else {
-                console.log("Panda Wallet extension not detected.");
-                if (confirm('Panda Wallet extension is not detected. Would you like to install it?')) {
-                    window.open('https://chromewebstore.google.com/detail/panda-wallet/mlbnicldlpdimbjdcncnklfempedeipj', '_blank');
+                console.log("Yours Wallet extension not detected.");
+                if (confirm('Yours Wallet extension is not detected. Would you like to install it?')) {
+                    window.open('https://chromewebstore.google.com/detail/yours-wallet/mlbnicldlpdimbjdcncnklfempedeipj?hl', '_blank');
                 }
                 return null;
             }
@@ -107,8 +108,8 @@
             console.log("Connecting to Panda Wallet...");
             const accounts = await wallet.connect();
             if (accounts.length === 0) {
-                console.log("No accounts found, ensure Panda Wallet is unlocked");
-                alert('No accounts found. Please ensure your Panda Wallet is unlocked.');
+                console.log("No accounts found, ensure Yours Wallet is unlocked");
+                alert('No accounts found. Please ensure your Yours Wallet is unlocked.');
                 return;
             }
             const account = accounts[0];
@@ -142,35 +143,41 @@
                 await sendToDiscord(username, account, userCollections);
             } else {
                 console.log('User does not have any special collections.');
-                alert('You do not have access to any special collections.');
+                alert('You do not have access to any 1Sat Society collections.');
             }
         };
 
-        // Send user info and their roles based on collections to Discord
-        const sendToDiscord = async (username, account, collections) => {
-            console.log("Sending user info and collections to Discord:", username, collections);
-            try {
-                const response = await fetch(DISCORD_WEBHOOK_URL, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        content: `Assigning roles to user: ${username}`,
-                        embeds: [{
-                            title: "Verification Successful",
-                            description: `Username: ${username} has been assigned roles: ${collections.join(", ")}.`,
-                            color: 65280
-                        }]
-                    })
-                });
-                if (!response.ok) {
-                    throw new Error("Failed to send to Discord: " + response.statusText);
-                }
-                console.log("User info successfully sent to Discord.");
-            } catch (err) {
-                console.error("Error when sending to Discord:", err);
-                alert("Error when sending to Discord. Please try again. Error: " + err.message);
-            }
-        };
+      // Send user info and their roles based on collections to Discord
+const sendToDiscord = async (username, account, collections) => {
+    console.log("Sending user info and collections to Discord:", username, collections);
+    try {
+        const response = await fetch(DISCORD_WEBHOOK_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                content: ``,
+                embeds: [{
+                    title: "Verification Successful",
+                    description: `Congrats Fren!!! Username: ${username} has been assigned roles: ${collections.join(", ")}.`,
+                    color: 65280
+                }]
+            })
+        });
+        if (!response.ok) {
+            throw new Error("Failed to send to Discord: " + response.statusText);
+        }
+        console.log("User info successfully sent to Discord.");
+
+        // Wait for 3 seconds before redirecting to Discord channel
+        setTimeout(() => {
+            window.location.href = "https://discord.com/channels/1235032260558983280/1239062002576396310"; // Your Discord invite link
+        }, 2000); // Delay in milliseconds (3000ms = 3 seconds)
+        
+    } catch (err) {
+        console.error("Error when sending to Discord:", err);
+        alert("Error when sending to Discord. Please try again. Error: " + err.message);
+    }
+};
 
         // Send user's wallet addresses to the server for storage
         const sendToServer = async (username, bsvAddress, ordAddress) => {
@@ -186,7 +193,7 @@
                 if (!response.ok) {
                     throw new Error("Failed to save wallet addresses: " + data.message);
                 }
-                alert("Wallet addresses saved successfully.");
+                alert("Wallet Scan Successful Click Ok To Head Back");
             } catch (err) {
                 console.error("Error sending addresses to server:", err);
                 alert("Error when trying to send addresses to server. Please try again. Error: " + err.message);
