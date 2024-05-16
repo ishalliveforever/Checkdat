@@ -22,9 +22,15 @@ To set up CheckDat, follow these steps:
 git clone https://github.com/ishalliveforever/checkdat.git
 cd checkdat
 npm install
+pip install -r requirements.txt
 pip install flask
 ```
 
+To make a list of python libraries run pip freeze 
+
+```
+pip freeze > requirements.txt
+```
 ## Configuration
 
 Create a `.env` file in your project root and include the following configurations:
