@@ -17,9 +17,9 @@ client.on('ready', () => {
 });
 
 client.on('messageCreate', async message => {
-    if (message.author.bot || !message.guild) return; // Ignore messages from bots or outside of guilds
+    if (message.author.bot || !message.guild) return;
 
-    if (message.content.toLowerCase() === '!verify') {
+    if (message.content.toLowerCase().startsWith('!verify')) {
         const authUrl = `${process.env.SERVER_URL}/auth`;
         const button = new ButtonBuilder()
             .setLabel('Click to Verify')
@@ -28,14 +28,17 @@ client.on('messageCreate', async message => {
             .setURL(authUrl);
         const row = new ActionRowBuilder().addComponents(button);
         try {
-            await message.reply({ content: 'Welcome to the 1Sat Society.To ensure a smooth and secure experience, we need all members to verify their wallets before gaining access. Please follow these simple steps to complete your verification 1. **Prepare Your Wallet:**Ensure that your wallet containing the 1Sat Ordinals NFT is ready.', components: [row] });
+            await message.reply({
+                content: 'Welcome to the 1Sat Society. To ensure a smooth and secure experience, we need all members to verify their wallets before gaining access. Please follow these simple steps to complete your verification:\n1. **Prepare Your Wallet:** Ensure that your wallet containing the 1Sat Ordinals NFT is ready.',
+                components: [row]
+            });
             console.log(`Verification link sent to user ${message.author.tag}.`);
         } catch (error) {
             console.error("Failed to send verification link:", error);
         }
-    } else if (message.content.toLowerCase() === '!setlink') { // New command to send the embed with a link
+    } else if (message.content.toLowerCase().startsWith('!setlink')) {
         const embed = new EmbedBuilder()
-            .setColor(0xFFA500) // Orange color to match the logo
+            .setColor(0xFFA500)
             .setTitle('Welcome To 1Sat Society')
             .setDescription('To ensure a smooth and secure experience, we need all members to verify their Yours wallets before gaining access. Please click verify wallet to get started.')
             .setURL('https://fantastic-space-couscous-w4q9gr5prrwfjwj-5000.app.github.dev/auth')
@@ -55,6 +58,35 @@ client.on('messageCreate', async message => {
             await pinnedMessage.pin();
         } catch (error) {
             console.error('Could not pin the message:', error);
+        }
+    } else if (message.content.toLowerCase().startsWith('!list')) {
+        const parts = message.content.split(' ').slice(1);
+        if (parts.length < 2) {
+            await message.reply('Please provide item name and price. Usage: `!list [item] [price]`');
+            return;
+        }
+        
+        const itemName = parts.slice(0, -1).join(' ');
+        const price = parts[parts.length - 1];
+
+        try {
+            const response = await axios.post(`${process.env.SERVER_URL}/api/list_item`, {
+                username: message.author.username,
+                item: itemName,
+                price: price
+            }, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (response.data.message) {
+                await message.reply(`Item listed successfully! Item: ${itemName}, Price: ${price}`);
+            } else {
+                await message.reply('Failed to list item. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error listing item:', error);
+            await message.reply('Failed to list item due to a server error. Please try again later.');
         }
     }
 });
