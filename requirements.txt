@@ -1,3 +1,17 @@
+# Add Flask and Flask-SQLAlchemy for your web application
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+
+# Add python-dotenv to manage environment variables
+python-dotenv==1.0.1
+
+# Add discord.py for interacting with the Discord API
+discord.py==2.3.1
+
+# Add requests for making HTTP requests to external APIs
+requests==2.31.0
+
+# Existing dependencies in your requirements.txt
 anyio==4.3.0
 argon2-cffi==23.1.0
 argon2-cffi-bindings==21.2.0
@@ -24,8 +38,6 @@ exceptiongroup==1.2.0
 executing==2.0.1
 fastjsonschema==2.19.1
 filelock==3.13.3
-Flask==3.0.3
-Flask-SQLAlchemy==3.1.1
 fonttools==4.50.0
 fqdn==1.5.1
 fsspec==2024.3.1
@@ -102,7 +114,6 @@ pycparser==2.22
 Pygments==2.17.2
 pyparsing==3.1.2
 python-dateutil==2.9.0.post0
-python-dotenv==1.0.1
 python-json-logger==2.0.7
 pytz==2024.1
 PyYAML==6.0.1

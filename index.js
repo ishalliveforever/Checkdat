@@ -2,7 +2,7 @@ const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle,
 const axios = require('axios');
 require('dotenv').config();
 
-// Configure the Discord client
+// Configure the Discord client with necessary intents
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -12,42 +12,49 @@ const client = new Client({
     ]
 });
 
+// Event listener for when the bot is ready
 client.on('ready', () => {
     console.log(`Bot is online and logged in as ${client.user.tag}!`);
 });
 
+// Event listener for new messages
 client.on('messageCreate', async message => {
+    // Ignore messages from bots or outside of guilds
     if (message.author.bot || !message.guild) return;
 
+    // Handle the !verify command
     if (message.content.toLowerCase().startsWith('!verify')) {
-        const authUrl = `${process.env.SERVER_URL}/auth`;
+        const authUrl = `${process.env.SERVER_URL}/auth`; // URL for authentication
         const button = new ButtonBuilder()
             .setLabel('Click to Verify')
             .setStyle(ButtonStyle.Link)
             .setEmoji('💻')
-            .setURL(authUrl);
+            .setURL(authUrl); // Set the button URL to the auth URL
         const row = new ActionRowBuilder().addComponents(button);
         try {
             await message.reply({
-                content: 'Welcome to the 1Sat Society. To ensure a smooth and secure experience, we need all members to verify their wallets before gaining access. Please follow these simple steps to complete your verification:\n1. **Prepare Your Wallet:** Ensure that your wallet containing the 1Sat Ordinals NFT is ready.',
+                content: 'Welcome to the 1Sat Society. To ensure a smooth and secure experience, please verify your wallet by clicking the button below.',
                 components: [row]
             });
             console.log(`Verification link sent to user ${message.author.tag}.`);
         } catch (error) {
             console.error("Failed to send verification link:", error);
         }
-    } else if (message.content.toLowerCase().startsWith('!setlink')) {
+    } 
+
+    // Handle the !setlink command
+    else if (message.content.toLowerCase().startsWith('!setlink')) {
         const embed = new EmbedBuilder()
-            .setColor(0xFFA500)
+            .setColor(0xFFA500) // Orange color
             .setTitle('Welcome To 1Sat Society')
-            .setDescription('To ensure a smooth and secure experience, we need all members to verify their Yours wallets before gaining access. Please click verify wallet to get started.')
-            .setURL('https://fantastic-space-couscous-w4q9gr5prrwfjwj-5000.app.github.dev/auth')
+            .setDescription('To ensure a smooth and secure experience, we need all members to verify their wallet.')
+            .setURL('https://your-auth-url.com/auth') // Replace with your authentication URL
             .setTimestamp();
 
         const button = new ButtonBuilder()
             .setLabel('Verify Wallet')
             .setStyle(ButtonStyle.Link)
-            .setURL('https://fantastic-space-couscous-w4q9gr5prrwfjwj-5000.app.github.dev/auth');
+            .setURL('https://your-auth-url.com/auth'); // Replace with your authentication URL
 
         const row = new ActionRowBuilder().addComponents(button);
 
@@ -59,15 +66,18 @@ client.on('messageCreate', async message => {
         } catch (error) {
             console.error('Could not pin the message:', error);
         }
-    } else if (message.content.toLowerCase().startsWith('!list')) {
-        const parts = message.content.split(' ').slice(1);
+    } 
+
+    // Handle the !list command
+    else if (message.content.toLowerCase().startsWith('!list')) {
+        const parts = message.content.split(' ').slice(1); // Split message into parts and ignore the command part
         if (parts.length < 2) {
             await message.reply('Please provide item name and price. Usage: `!list [item] [price]`');
             return;
         }
-        
-        const itemName = parts.slice(0, -1).join(' ');
-        const price = parts[parts.length - 1];
+
+        const itemName = parts.slice(0, -1).join(' '); // Item name
+        const price = parts[parts.length - 1]; // Price
 
         try {
             const response = await axios.post(`${process.env.SERVER_URL}/api/list_item`, {
@@ -91,8 +101,10 @@ client.on('messageCreate', async message => {
     }
 });
 
+// Log in to Discord with the bot token
 client.login(process.env.DISCORD_BOT_TOKEN);
 
+// Handle process termination gracefully
 process.on("SIGINT", () => {
     client.destroy();
     process.exit();

@@ -4,17 +4,21 @@ import requests
 import os
 from dotenv import load_dotenv
 
-# Load environment variables
+# Load environment variables from a .env file
 load_dotenv()
 
+# Initialize the Flask application
 app = Flask(__name__)
+# Set the secret key for session management
 app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'super_secret_key')
+# Configure the SQLite database URI
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Initialize SQLAlchemy for database interactions
 db = SQLAlchemy(app)
 
-# Define a User model with database column specifications
+# Define a User model to store user data
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -24,30 +28,37 @@ class User(db.Model):
     def __repr__(self):
         return f'<User {self.username}>'
 
+# Set up the database (create tables)
 def setup_database():
     with app.app_context():
         db.create_all()
         print("Database setup completed.")
 
+# Define a route for the home page
 @app.route('/')
 def home():
     print("Home page accessed.")
     return 'Home Page - Server is Running'
 
+# Define a route to show all users
 @app.route('/show_users')
 def show_users():
     print("Fetching all user records.")
     users = User.query.all()
-    user_data = '<br>'.join([f"Username: {user.username}, BSV Address: {user.bsv_address or 'Not set'}, ORD Address: {user.ord_address or 'Not set'}" for user in users])
+    user_data = '<br>'.join([f"Username: {user.username}, BSV Address: {user.bsv_address}" for user in users])
     return user_data if user_data else "No users found"
 
+# Define a route for Discord OAuth2 authentication
 @app.route('/auth')
 def auth():
     print("Redirecting to Discord OAuth2 URL.")
-    discord_oauth_url = f"https://discord.com/api/oauth2/authorize?client_id={os.getenv('DISCORD_CLIENT_ID')}" \
-                        f"&redirect_uri={os.getenv('DISCORD_REDIRECT_URI')}&response_type=code&scope=identify"
+    discord_oauth_url = (
+        f"https://discord.com/api/oauth2/authorize?client_id={os.getenv('DISCORD_CLIENT_ID')}"
+        f"&redirect_uri={os.getenv('DISCORD_REDIRECT_URI')}&response_type=code&scope=identify"
+    )
     return redirect(discord_oauth_url)
 
+# Define an API route to get a user's BSV address
 @app.route('/api/getUserBSVAddress', methods=['GET'])
 def get_user_bsv_address():
     username = request.args.get('username')
@@ -58,6 +69,7 @@ def get_user_bsv_address():
     else:
         return jsonify(error="User not found"), 404
 
+# Define an API route to initiate a payment
 @app.route('/api/initiatePayment', methods=['POST'])
 def initiate_payment():
     payment_data = request.json
@@ -68,11 +80,13 @@ def initiate_payment():
     else:
         return jsonify({"error": "Failed to initiate payment"}), 500
 
+# Function to send BSV to a specified address
 def send_bsv(address, amount):
     print(f"Sending BSV to address: {address} with amount: {amount}")
     # Placeholder for actual BSV transaction implementation
     return "dummy_transaction_id"
 
+# Define a route to handle OAuth2 callback from Discord
 @app.route('/oauth2/callback')
 def oauth2_callback():
     code = request.args.get('code')
@@ -94,6 +108,7 @@ def oauth2_callback():
     session['user_id'] = user.id
     return redirect('/verify_wallet')
 
+# Define an API route to save wallet addresses
 @app.route('/save_wallet_addresses', methods=['POST'])
 def save_wallet_addresses():
     data = request.json
@@ -103,13 +118,12 @@ def save_wallet_addresses():
         user = User(username=data['username'], bsv_address=data['bsvAddress'], ord_address=data['ordAddress'])
         db.session.add(user)
     else:
-        if user.bsv_address is None:
-            user.bsv_address = data['bsvAddress']
-        if user.ord_address is None:
-            user.ord_address = data['ordAddress']
+        user.bsv_address = data['bsvAddress']
+        user.ord_address = data['ordAddress']
     db.session.commit()
     return jsonify({"message": "Addresses saved successfully"}), 200
 
+# Define a route to verify wallet
 @app.route('/verify_wallet')
 def verify_wallet():
     user_id = session.get('user_id')
@@ -119,6 +133,7 @@ def verify_wallet():
     user = User.query.get(user_id)
     return render_template('index.html', username=user.username)
 
+# Function to exchange the authorization code for an access token
 def exchange_code_for_token(code):
     print(f"Exchanging code for token: {code}")
     data = {
@@ -131,12 +146,14 @@ def exchange_code_for_token(code):
     token_response = requests.post('https://discord.com/api/oauth2/token', data=data)
     return token_response.json() if token_response.status_code == 200 else {}
 
+# Function to fetch Discord user data using the access token
 def fetch_discord_user_data(access_token):
-    print(f"Fetching Discord user data with access token.")
+    print("Fetching Discord user data with access token.")
     headers = {'Authorization': f'Bearer {access_token}'}
     response = requests.get('https://discord.com/api/users/@me', headers=headers)
     return response.json() if response.status_code == 200 else {}
 
+# Main entry point for the Flask application
 if __name__ == '__main__':
     setup_database()
     app.run(host='0.0.0.0', port=5000, debug=True)
